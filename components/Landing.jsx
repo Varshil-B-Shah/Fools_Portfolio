@@ -71,7 +71,7 @@ const AnimatedModel = ({ startAnimation, onAnimationComplete }) => {
 
       gsap.to(groupRef.current.position, {
         y: -10,
-        duration: 5,
+        duration: 1,
         ease: "power4.in",
         onComplete: () => {
           setIsAnimating(false);
@@ -102,45 +102,98 @@ const AnimatedModel = ({ startAnimation, onAnimationComplete }) => {
 const ModelCorridor = ({ 
   models, 
   startRiseAnimation, 
-  startFadeInAnimation,
-  startFadeOutAnimation,
-  onFadeOutComplete 
+  startFadeInAnimation
 }) => {
   const leftModelRefs = useRef([]);
   const rightModelRefs = useRef([]);
   const [fadeProgress, setFadeProgress] = useState(0);
-  const [fadeOutProgress, setFadeOutProgress] = useState(0);
-  const [currentFadeOutIndex, setCurrentFadeOutIndex] = useState(26);
 
   useEffect(() => {
     if (startRiseAnimation) {
+      const leftAnimationTimeline = gsap.timeline();
+      const rightAnimationTimeline = gsap.timeline();
+
+      // Animate left corridor rise
       leftModelRefs.current.forEach((groupRef, index) => {
         if (groupRef) {
-          gsap.fromTo(
+          leftAnimationTimeline.fromTo(
             groupRef.position,
             { y: -20 },
             {
               y: models[index].position[1],
               duration: 2.5,
-              delay: index * 0.3,
               ease: "power2.out",
-            }
+            },
+            index * 0.3 // Staggered delay
           );
         }
       });
 
+      // Animate right corridor rise
       rightModelRefs.current.forEach((groupRef, index) => {
         if (groupRef) {
-          gsap.fromTo(
+          rightAnimationTimeline.fromTo(
             groupRef.position,
             { y: -20 },
             {
               y: models[index + leftModelRefs.current.length].position[1],
               duration: 2.5,
-              delay: index * 0.3,
               ease: "power2.out",
-            }
+            },
+            index * 0.3 // Staggered delay
           );
+        }
+      });
+
+      // Scale down animation for left corridor AFTER rise animations complete
+      leftAnimationTimeline.add(() => {
+        for (let i = leftModelRefs.current.length - 1; i >= 0; i--) {
+          if (leftModelRefs.current[i]) {
+            gsap.fromTo(
+              leftModelRefs.current[i].scale, 
+              {
+                clipPath: 'inset(0% 0% 0% 0%)', // Start fully visible
+                z: 1,
+                x: 1,
+                y: 1
+              },
+              {
+                clipPath: 'inset(0% 0% 100% 0%)', // Fade out from bottom
+                z: 0,
+                x: 0,
+                y: 0,
+                duration: 1,
+                delay: (leftModelRefs.current.length - i) * 0.1,
+                ease: "power2.in"
+              }
+            );
+          }
+        }
+      });
+      
+      // Scale down animation for right corridor AFTER rise animations complete
+      rightAnimationTimeline.add(() => {
+        for (let i = rightModelRefs.current.length - 1; i >= 0; i--) {
+          if (rightModelRefs.current[i]) {
+            gsap.fromTo(
+              rightModelRefs.current[i].scale, 
+              {
+                clipPath: 'inset(0% 0% 0% 0%)', // Start fully visible
+                z: 1,
+                x: 1,
+                y: 1
+              },
+              {
+                clipPath: 'inset(0% 0% 100% 0%)', // Fade out from bottom
+                z: 0,
+                x: 0,
+                y: 0,
+                duration: 1,
+                delay: (rightModelRefs.current.length - i) * 0.1,
+                ease: "power2.in"
+              }
+            );
+          }
         }
       });
     }
@@ -156,35 +209,10 @@ const ModelCorridor = ({
     }
   }, [startFadeInAnimation]);
 
-  useEffect(() => {
-    if (startFadeOutAnimation) {
-      const fadeOutSequence = () => {
-        if (currentFadeOutIndex < 0) {
-          onFadeOutComplete();
-          return;
-        }
-
-        gsap.to(setFadeOutProgress, {
-          value: 1,
-          duration: 0.5,
-          ease: "power1.out",
-          onComplete: () => {
-            // Reset progress and move to next model
-            setFadeOutProgress(0);
-            setCurrentFadeOutIndex(prev => prev - 1);
-          }
-        });
-      };
-
-      fadeOutSequence();
-    }
-  }, [startFadeOutAnimation, currentFadeOutIndex]);
-
   return (
     <>
       {models.slice(0, 13).map((modelProps, index) => {
         const reverseIndex = 12 - index; // Reverse index to start from last
-        const isFadingOut = index === currentFadeOutIndex % 13;
 
         return (
           <group
@@ -196,9 +224,6 @@ const ModelCorridor = ({
               modelProps.position[2],
             ]}
             style={{
-              opacity: isFadingOut 
-                ? 1 - fadeOutProgress 
-                : (index > currentFadeOutIndex % 13 ? 1 : 0),
               clipPath: `polygon(0 ${
                 fadeProgress * 100 >= (reverseIndex / 12) * 100 ? 100 : 0
               }%, 100% ${
@@ -217,7 +242,6 @@ const ModelCorridor = ({
 
       {models.slice(13).map((modelProps, index) => {
         const reverseIndex = 12 - index; // Reverse index to start from last
-        const isFadingOut = index === currentFadeOutIndex % 13;
 
         return (
           <group
@@ -229,9 +253,6 @@ const ModelCorridor = ({
               modelProps.position[2],
             ]}
             style={{
-              opacity: isFadingOut 
-                ? 1 - fadeOutProgress 
-                : (index > currentFadeOutIndex % 13 ? 1 : 0),
               clipPath: `polygon(0 ${
                 fadeProgress * 100 >= (reverseIndex / 12) * 100 ? 100 : 0
               }%, 100% ${
@@ -256,7 +277,6 @@ const Landing = () => {
   const [showCorridor, setShowCorridor] = useState(false);
   const [startRiseAnimation, setStartRiseAnimation] = useState(false);
   const [startFadeInAnimation, setStartFadeInAnimation] = useState(false);
-  const [startFadeOutAnimation, setStartFadeOutAnimation] = useState(false);
   const scene = useLoader(GLTFLoader, "/untitled.glb");
 
   const corridorModels = useMemo(() => {
@@ -281,16 +301,8 @@ const Landing = () => {
       setStartRiseAnimation(true);
       setTimeout(() => {
         setStartFadeInAnimation(true);
-        setTimeout(() => {
-          setStartFadeOutAnimation(true);
-        }, 4000); // Start fade-out 4 seconds after fade-in
       }, 2000); // Start fade-in 2 seconds after rise animation
     }, 500);
-  };
-
-  const handleFadeOutComplete = () => {
-    // Handle what happens after fade-out is complete
-    console.log("Corridor fade-out complete");
   };
 
   return (
@@ -317,8 +329,6 @@ const Landing = () => {
                 models={corridorModels}
                 startRiseAnimation={startRiseAnimation}
                 startFadeInAnimation={startFadeInAnimation}
-                startFadeOutAnimation={startFadeOutAnimation}
-                onFadeOutComplete={handleFadeOutComplete}
               />
             )}
           </Center>
