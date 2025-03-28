@@ -6,54 +6,60 @@ import { Environment, Center, Points, PointMaterial } from "@react-three/drei";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { gsap } from "gsap";
 import * as THREE from "three";
+import { useLandingAnimation } from './LandingContext';
+
+// export const useLandingStore = create((set) => ({
+//   isLandingAnimationComplete: false,
+//   setLandingAnimationComplete: (value) => set({ isLandingAnimationComplete: value })
+// }));
 
 const FireParticles = () => {
   const pointsRef = useRef();
-  
-  const particlesCount = 10000; 
+
+  const particlesCount = 10000;
   const positions = useMemo(() => {
     const pos = new Float32Array(particlesCount * 3);
     for (let i = 0; i < particlesCount; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 100; 
-      pos[i * 3 + 1] = Math.random() * 60 - 10; 
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 50; 
+      pos[i * 3] = (Math.random() - 0.5) * 100;
+      pos[i * 3 + 1] = Math.random() * 60 - 10;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 50;
     }
     return pos;
   }, []);
 
   useFrame((state) => {
     const positions = pointsRef.current.geometry.attributes.position.array;
-    
+
     for (let i = 0; i < particlesCount; i++) {
       positions[i * 3 + 1] += Math.random() * 0.1 + 0.05;
       positions[i * 3] += Math.sin(state.clock.elapsedTime + i) * 0.05;
-      
+
       if (positions[i * 3 + 1] > 30) {
         positions[i * 3 + 1] = -10;
         positions[i * 3] = (Math.random() - 0.5) * 100;
         positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
       }
     }
-    
+
     pointsRef.current.geometry.attributes.position.needsUpdate = true;
   });
 
   return (
-    <Points 
+    <Points
       ref={pointsRef}
       positions={positions}
       stride={3}
       frustumCulled={false}
-      position={[0, -10, -20]} 
+      position={[0, -10, -20]}
     >
       <PointMaterial
         transparent
         color="#ff4500"
-        size={0.08} 
+        size={0.08}
         sizeAttenuation
         depthWrite={false}
         blending={THREE.AdditiveBlending}
-        opacity={0.7} 
+        opacity={0.7}
       />
     </Points>
   );
@@ -71,7 +77,7 @@ const AnimatedModel = ({ startAnimation, onAnimationComplete }) => {
 
       gsap.to(groupRef.current.position, {
         y: -10,
-        duration: 1,
+        duration: 4,
         ease: "power4.in",
         onComplete: () => {
           setIsAnimating(false);
@@ -99,10 +105,10 @@ const AnimatedModel = ({ startAnimation, onAnimationComplete }) => {
   );
 };
 
-const ModelCorridor = ({ 
-  models, 
-  startRiseAnimation, 
-  startFadeInAnimation
+const ModelCorridor = ({
+  models,
+  startRiseAnimation,
+  startFadeInAnimation,
 }) => {
   const leftModelRefs = useRef([]);
   const rightModelRefs = useRef([]);
@@ -145,53 +151,51 @@ const ModelCorridor = ({
         }
       });
 
-      // Scale down animation for left corridor AFTER rise animations complete
       leftAnimationTimeline.add(() => {
         for (let i = leftModelRefs.current.length - 1; i >= 0; i--) {
           if (leftModelRefs.current[i]) {
             gsap.fromTo(
-              leftModelRefs.current[i].scale, 
+              leftModelRefs.current[i].scale,
               {
-                clipPath: 'inset(0% 0% 0% 0%)', // Start fully visible
+                clipPath: "inset(0% 0% 0% 0%)", // Start fully visible
                 z: 1,
                 x: 1,
-                y: 1
+                y: 1,
               },
               {
-                clipPath: 'inset(0% 0% 100% 0%)', // Fade out from bottom
+                clipPath: "inset(0% 0% 100% 0%)", // Fade out from bottom
                 z: 0,
                 x: 0,
                 y: 0,
                 duration: 1,
                 delay: (leftModelRefs.current.length - i) * 0.1,
-                ease: "power2.in"
-              }
+                ease: "power2.in",
+              },
             );
           }
         }
       });
-      
-      // Scale down animation for right corridor AFTER rise animations complete
+
       rightAnimationTimeline.add(() => {
         for (let i = rightModelRefs.current.length - 1; i >= 0; i--) {
           if (rightModelRefs.current[i]) {
             gsap.fromTo(
-              rightModelRefs.current[i].scale, 
+              rightModelRefs.current[i].scale,
               {
-                clipPath: 'inset(0% 0% 0% 0%)', // Start fully visible
+                clipPath: "inset(0% 0% 0% 0%)", // Start fully visible
                 z: 1,
                 x: 1,
-                y: 1
+                y: 1,
               },
               {
-                clipPath: 'inset(0% 0% 100% 0%)', // Fade out from bottom
+                clipPath: "inset(0% 0% 100% 0%)", // Fade out from bottom
                 z: 0,
                 x: 0,
                 y: 0,
                 duration: 1,
                 delay: (rightModelRefs.current.length - i) * 0.1,
-                ease: "power2.in"
-              }
+                ease: "power2.in",
+              },
             );
           }
         }
@@ -234,7 +238,7 @@ const ModelCorridor = ({
             <primitive
               object={modelProps.model}
               scale={modelProps.scale}
-              rotation={[Math.PI, 5, 0]}
+              rotation={[0, -40, 0]}
             />
           </group>
         );
@@ -263,7 +267,7 @@ const ModelCorridor = ({
             <primitive
               object={modelProps.model}
               scale={modelProps.scale}
-              rotation={[Math.PI, -10, 0]}
+              rotation={[0, 0, 0]}
             />
           </group>
         );
@@ -273,22 +277,25 @@ const ModelCorridor = ({
 };
 
 const Landing = () => {
-  const [startAnimation, setStartAnimation] = useState(false);
+  const [startAnimation, setStartAnimation] = useState(true);
   const [showCorridor, setShowCorridor] = useState(false);
   const [startRiseAnimation, setStartRiseAnimation] = useState(false);
   const [startFadeInAnimation, setStartFadeInAnimation] = useState(false);
-  const scene = useLoader(GLTFLoader, "/untitled.glb");
+  const scene = useLoader(GLTFLoader, "/untitled1.glb");
+
+  // const { setLandingAnimationComplete } = useLandingStore();
+  const { setIsLandingAnimationComplete } = useLandingAnimation();
 
   const corridorModels = useMemo(() => {
     const leftSide = Array.from({ length: 13 }, (_, i) => ({
-      position: [-9.5 + i * 0.75, 8 - i * 0.3, 0 - i * 2],
-      scale: 2.3 - i * 0.17,
+      position: [-8.7 + i * 0.7, -1 - i * 0.3, 0 - i * 2],
+      scale: 1.8 - i * 0.14,
       model: scene.scene.clone(),
     }));
 
     const rightSide = Array.from({ length: 13 }, (_, i) => ({
-      position: [10 - i * 0.75, 8 - i * 0.3, 0 - i * 2],
-      scale: 2.3 - i * 0.17,
+      position: [9 - i * 0.7, -1 - i * 0.3, 0 - i * 2],
+      scale: 1.8 - i * 0.14,
       model: scene.scene.clone(),
     }));
 
@@ -301,7 +308,11 @@ const Landing = () => {
       setStartRiseAnimation(true);
       setTimeout(() => {
         setStartFadeInAnimation(true);
-      }, 2000); // Start fade-in 2 seconds after rise animation
+        
+        setTimeout(() => {
+          setIsLandingAnimationComplete(true);
+        }, 5000);
+      }, 2000);
     }, 500);
   };
 
@@ -314,9 +325,9 @@ const Landing = () => {
         }}
       >
         <color attach="background" args={["#000000"]} />
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[2, 2, 2]} intensity={1} color="#ff4500" />
-        
+        <ambientLight intensity={1} />
+        <directionalLight position={[2, 2, 2]} intensity={2} color="#ff4500" />
+
         <Suspense fallback={null}>
           <Center>
             {!showCorridor ? (
@@ -332,10 +343,10 @@ const Landing = () => {
               />
             )}
           </Center>
-          
+
           <FireParticles />
         </Suspense>
-        
+
         <Environment preset="city" />
       </Canvas>
 
