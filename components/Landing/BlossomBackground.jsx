@@ -12,10 +12,11 @@ const BlossomBackground = ({
   petalStyles = [
     "petal-style1",
     "petal-style2",
-    "petal-style3", 
+    "petal-style3",
     "petal-style4",
   ],
   backgroundColor = "rgba(0, 0, 0, 0.9)",
+  petalColor = "rgba(255, 105, 180, 0.8)",
   particleColor = "rgba(255, 192, 203, 0.5)",
   style = {},
 }) => {
@@ -24,13 +25,11 @@ const BlossomBackground = ({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    
-    // Set canvas size
+    const ctx = canvas.getContext("2d");
+
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
 
-    // Petal Class (similar to original implementation)
     class Petal {
       constructor(config = {}) {
         this.customClass = config.customClass || "";
@@ -50,7 +49,7 @@ const BlossomBackground = ({
           ...(config.rotation || {}),
         };
         this.size = Math.random() * 20 + 22;
-        this.opacity = Math.random() * 0.7 + 0.3;
+        this.opacity = Math.random() * 0.3 + 0.7;
       }
 
       calculateWindSpeed(t, y) {
@@ -78,7 +77,6 @@ const BlossomBackground = ({
         this.y += this.ySpeed;
         this.rotation.value += this.rotation.speed;
 
-        // Reset if out of bounds
         if (
           (this.fromRight && this.x < -10) ||
           (!this.fromRight && this.x > this.width + 10) ||
@@ -95,24 +93,29 @@ const BlossomBackground = ({
       draw(ctx) {
         ctx.save();
         ctx.globalAlpha = this.opacity;
-        
-        // More advanced petal drawing
+
         ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation.value * Math.PI / 180);
-        
+        ctx.rotate((this.rotation.value * Math.PI) / 180);
+
         ctx.beginPath();
-        ctx.moveTo(0, -this.size/2);
-        ctx.quadraticCurveTo(this.size/2, 0, 0, this.size/2);
-        ctx.quadraticCurveTo(-this.size/2, 0, 0, -this.size/2);
-        
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.moveTo(0, -this.size / 2);
+        ctx.quadraticCurveTo(this.size / 2, 0, 0, this.size / 2);
+        ctx.quadraticCurveTo(-this.size / 2, 0, 0, -this.size / 2);
+
+        ctx.fillStyle = petalColor;
         ctx.fill();
-        
+
+        ctx.beginPath();
+        ctx.moveTo(0, -this.size / 2);
+        ctx.lineTo(0, this.size / 2);
+        ctx.strokeStyle = "rgba(255, 20, 147, 0.7)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
         ctx.restore();
       }
     }
 
-    // Particle Class
     class Particle {
       constructor(width, height) {
         this.reset(width, height);
@@ -120,11 +123,11 @@ const BlossomBackground = ({
 
       reset(width, height) {
         this.x = Math.random() * width;
-        this.y = Math.random() * height;
-        
-        this.xSpeed = (Math.random() - 0.5) * 3;
-        this.ySpeed = -Math.abs(Math.random() * 2 + 1);
-        
+        this.y = -10;
+
+        this.xSpeed = (Math.random() - 0.5) * 2;
+        this.ySpeed = Math.random() * 2 + 1;
+
         this.size = Math.random() * 2 + 1;
         this.opacity = Math.random() * 0.7 + 0.3;
       }
@@ -133,7 +136,7 @@ const BlossomBackground = ({
         this.x += this.xSpeed;
         this.y += this.ySpeed;
 
-        if (this.y < -10 || this.x < -10 || this.x > width + 10) {
+        if (this.y > height + 10 || this.x < -10 || this.x > width + 10) {
           this.reset(width, height);
         }
       }
@@ -146,31 +149,27 @@ const BlossomBackground = ({
       }
     }
 
-    // Create petals and particles
-    const petals = Array.from({ length: numPetals }, () => 
-      new Petal({ width: canvas.width, height: canvas.height })
+    const petals = Array.from(
+      { length: numPetals },
+      () => new Petal({ width: canvas.width, height: canvas.height })
     );
-    const particles = Array.from({ length: numParticles }, () => 
-      new Particle(canvas.width, canvas.height)
+    const particles = Array.from(
+      { length: numParticles },
+      () => new Particle(canvas.width, canvas.height)
     );
 
-    // Timer for wind and animation
     let timer = 0;
 
-    // Animation loop
     function animate() {
-      // Clear canvas with background color
       ctx.fillStyle = backgroundColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Update and draw particles
-      particles.forEach(particle => {
+      particles.forEach((particle) => {
         particle.update(canvas.width, canvas.height);
         particle.draw(ctx);
       });
 
-      // Update and draw petals
-      petals.forEach(petal => {
+      petals.forEach((petal) => {
         petal.update(timer);
         petal.draw(ctx);
       });
@@ -179,24 +178,30 @@ const BlossomBackground = ({
       animationRef.current = requestAnimationFrame(animate);
     }
 
-    // Start animation
     animate();
 
-    // Cleanup
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [numPetals, numParticles, gravity, windMaxSpeed, backgroundColor, particleColor]);
+  }, [
+    numPetals,
+    numParticles,
+    gravity,
+    windMaxSpeed,
+    backgroundColor,
+    particleColor,
+    petalColor,
+  ]);
 
   return (
     <div
       style={{
         width,
         height,
-        position: 'relative',
-        overflow: 'hidden',
+        position: "relative",
+        overflow: "hidden",
         ...style,
       }}
       className={`blossom-background ${className}`}
@@ -204,11 +209,11 @@ const BlossomBackground = ({
       <canvas
         ref={canvasRef}
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           left: 0,
-          width: '100%',
-          height: '100%',
+          width: "100%",
+          height: "100%",
           zIndex: -1,
         }}
       />

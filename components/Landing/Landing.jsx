@@ -6,12 +6,7 @@ import { Environment, Center, Points, PointMaterial } from "@react-three/drei";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { gsap } from "gsap";
 import * as THREE from "three";
-import { useLandingAnimation } from './LandingContext';
-
-// export const useLandingStore = create((set) => ({
-//   isLandingAnimationComplete: false,
-//   setLandingAnimationComplete: (value) => set({ isLandingAnimationComplete: value })
-// }));
+import { useLandingAnimation } from "../Providers/LandingContext";
 
 const FireParticles = () => {
   const pointsRef = useRef();
@@ -119,7 +114,6 @@ const ModelCorridor = ({
       const leftAnimationTimeline = gsap.timeline();
       const rightAnimationTimeline = gsap.timeline();
 
-      // Animate left corridor rise
       leftModelRefs.current.forEach((groupRef, index) => {
         if (groupRef) {
           leftAnimationTimeline.fromTo(
@@ -130,12 +124,11 @@ const ModelCorridor = ({
               duration: 2.5,
               ease: "power2.out",
             },
-            index * 0.3 // Staggered delay
+            index * 0.3
           );
         }
       });
 
-      // Animate right corridor rise
       rightModelRefs.current.forEach((groupRef, index) => {
         if (groupRef) {
           rightAnimationTimeline.fromTo(
@@ -146,7 +139,7 @@ const ModelCorridor = ({
               duration: 2.5,
               ease: "power2.out",
             },
-            index * 0.3 // Staggered delay
+            index * 0.3
           );
         }
       });
@@ -157,20 +150,20 @@ const ModelCorridor = ({
             gsap.fromTo(
               leftModelRefs.current[i].scale,
               {
-                clipPath: "inset(0% 0% 0% 0%)", // Start fully visible
+                clipPath: "inset(0% 0% 0% 0%)",
                 z: 1,
                 x: 1,
                 y: 1,
               },
               {
-                clipPath: "inset(0% 0% 100% 0%)", // Fade out from bottom
+                clipPath: "inset(0% 0% 100% 0%)",
                 z: 0,
                 x: 0,
                 y: 0,
                 duration: 1,
                 delay: (leftModelRefs.current.length - i) * 0.1,
                 ease: "power2.in",
-              },
+              }
             );
           }
         }
@@ -182,20 +175,20 @@ const ModelCorridor = ({
             gsap.fromTo(
               rightModelRefs.current[i].scale,
               {
-                clipPath: "inset(0% 0% 0% 0%)", // Start fully visible
+                clipPath: "inset(0% 0% 0% 0%)",
                 z: 1,
                 x: 1,
                 y: 1,
               },
               {
-                clipPath: "inset(0% 0% 100% 0%)", // Fade out from bottom
+                clipPath: "inset(0% 0% 100% 0%)",
                 z: 0,
                 x: 0,
                 y: 0,
                 duration: 1,
                 delay: (rightModelRefs.current.length - i) * 0.1,
                 ease: "power2.in",
-              },
+              }
             );
           }
         }
@@ -216,7 +209,7 @@ const ModelCorridor = ({
   return (
     <>
       {models.slice(0, 13).map((modelProps, index) => {
-        const reverseIndex = 12 - index; // Reverse index to start from last
+        const reverseIndex = 12 - index;
 
         return (
           <group
@@ -245,7 +238,7 @@ const ModelCorridor = ({
       })}
 
       {models.slice(13).map((modelProps, index) => {
-        const reverseIndex = 12 - index; // Reverse index to start from last
+        const reverseIndex = 12 - index;
 
         return (
           <group
@@ -281,9 +274,9 @@ const Landing = () => {
   const [showCorridor, setShowCorridor] = useState(false);
   const [startRiseAnimation, setStartRiseAnimation] = useState(false);
   const [startFadeInAnimation, setStartFadeInAnimation] = useState(false);
+  const [removeFire, setRemoveFire] = useState(false);
   const scene = useLoader(GLTFLoader, "/untitled1.glb");
 
-  // const { setLandingAnimationComplete } = useLandingStore();
   const { setIsLandingAnimationComplete } = useLandingAnimation();
 
   const corridorModels = useMemo(() => {
@@ -308,9 +301,11 @@ const Landing = () => {
       setStartRiseAnimation(true);
       setTimeout(() => {
         setStartFadeInAnimation(true);
-        
         setTimeout(() => {
           setIsLandingAnimationComplete(true);
+          setTimeout(() => {
+            setRemoveFire(true);
+          }, 6000);
         }, 5000);
       }, 2000);
     }, 500);
@@ -343,26 +338,11 @@ const Landing = () => {
               />
             )}
           </Center>
-
-          <FireParticles />
+          {!removeFire && <FireParticles />}
         </Suspense>
 
         <Environment preset="city" />
       </Canvas>
-
-      {!showCorridor && (
-        <button
-          onClick={() => setStartAnimation(true)}
-          className="absolute z-10 top-10 right-10 
-          bg-red-500/30 backdrop-blur-md text-white 
-          px-6 py-3 rounded-xl 
-          border border-red-500/50
-          hover:bg-red-500/50 transition-all duration-300
-          animate-pulse"
-        >
-          Bankai!
-        </button>
-      )}
     </div>
   );
 };
