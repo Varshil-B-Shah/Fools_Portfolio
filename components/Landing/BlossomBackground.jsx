@@ -4,7 +4,7 @@ const BlossomBackground = ({
   children,
   width = "100%",
   height = "100vh",
-  numPetals = 150,
+  numPetals = 50,
   numParticles = 30,
   gravity = 0.8,
   windMaxSpeed = 4,

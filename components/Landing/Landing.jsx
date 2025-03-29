@@ -306,7 +306,7 @@ const Landing = () => {
           setTimeout(() => {
             setRemoveFire(true);
           }, 6000);
-        }, 5000);
+        }, 4500);
       }, 2000);
     }, 500);
   };
